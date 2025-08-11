@@ -5,9 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, Mail } from 'lucide-react';
+import { Home, Lock, Mail } from 'lucide-react';
 
-const LoginForm: React.FC = () => {
+
+
+interface LoginFormProps {
+  onBack?: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,7 +38,9 @@ const LoginForm: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-900">Admin Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Admin Login
+          </CardTitle>
           <CardDescription>
             Access the Lecturer Assessment System
           </CardDescription>
@@ -54,7 +62,7 @@ const LoginForm: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -78,17 +86,35 @@ const LoginForm: React.FC = () => {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          
+
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Demo Credentials:</strong><br />
-              Email: admin@university.edu<br />
-              Password: admin123
+              <strong>Forgot Password?</strong>
+              <br />
+              <i>
+                <a
+                  href="https://portal.navalwarcollegenigeria.org.ng/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Reset your password on the main portal.
+                </a>
+              </i>
             </p>
           </div>
+
+          {onBack && (
+            <>
+              <br />
+              <Button variant="outline" onClick={onBack}>
+              <Home className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

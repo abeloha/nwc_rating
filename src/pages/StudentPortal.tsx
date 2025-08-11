@@ -43,14 +43,14 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
 
   const handleRateModule = (module: LecturerModule) => {
     if (hasRatedModule(module.id)) {
-      alert('You have already rated this module from this device.');
+      alert('You have already rated this module.');
       return;
     }
     setSelectedModule(module);
     setShowRatingForm(true);
   };
 
-  const handleSubmitRating = async (ratingData: Omit<Rating, 'id' | 'created_at' | 'lecturerModuleId' | 'module_name' | 'lecturer_name'>) => {
+  const handleSubmitRating = async (ratingData: Omit<Rating, 'id' | 'created_at' | 'module_name' | 'lecturer_name'>) => {
     if (!selectedModule) return;
 
     setIsSubmitting(true);
@@ -59,7 +59,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     try {
       const newRating = {
         ...ratingData,
-        lecturerModuleId: selectedModule.id,
+        lecturer_module_id: selectedModule.id,
         module_name: selectedModule.module_name,
         lecturer_name: selectedModule.lecturer_name,
       };
@@ -82,7 +82,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     }
   };
 
-  const getAverageRating = (moduleId: string): number => {
+  const getAverageRating = (moduleId: number): number => {
     const moduleRatings = ratings.filter(r => r.lecturer_module_id === moduleId);
     if (moduleRatings.length === 0) return 0;
     
@@ -141,7 +141,12 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent>
                 <RatingForm
+                  module={selectedModule}
                   onSubmit={handleSubmitRating}
+                  onCancel={() => {
+                    setShowRatingForm(false);
+                    setSelectedModule(null);
+                  }}
                   isSubmitting={isSubmitting}
                 />
                 {error && <div className="mt-4 text-red-600">{error}</div>}

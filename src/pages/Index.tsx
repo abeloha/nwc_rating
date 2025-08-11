@@ -20,7 +20,7 @@ const Index: React.FC = () => {
   }, []);
 
   if (!isAuthenticated && currentView === 'admin') {
-    return <LoginForm />;
+    return <LoginForm onBack={() => setCurrentView("home")} />;
   }
 
   if (currentView === 'admin' && isAuthenticated) {

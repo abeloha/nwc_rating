@@ -18,9 +18,10 @@ interface RatingFormProps {
     remarks?: string;
   }) => void;
   onCancel: () => void;
+  isSubmitting: boolean;
 }
 
-const RatingForm: React.FC<RatingFormProps> = ({ module, onSubmit, onCancel }) => {
+const RatingForm: React.FC<RatingFormProps> = ({ module, onSubmit, isSubmitting, onCancel }) => {
   const [scores, setScores] = useState<number[]>([0, 0, 0, 0, 0]);
   const [remarks, setRemarks] = useState('');
 
@@ -120,8 +121,9 @@ const RatingForm: React.FC<RatingFormProps> = ({ module, onSubmit, onCancel }) =
             </div>
 
             <div className="flex space-x-2">
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" disabled={isSubmitting}>
                 Submit Rating
+
               </Button>
               <Button type="button" variant="outline" onClick={onCancel}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
