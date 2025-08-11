@@ -11,10 +11,16 @@ interface ModuleFormProps {
   module?: LecturerModule;
   onSubmit: (module: Omit<LecturerModule, 'id' | 'created_at'>) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
-const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState({
+const ModuleForm: React.FC<ModuleFormProps> = ({ 
+  module, 
+  onSubmit, 
+  onCancel, 
+  isSubmitting = false 
+}) => {
+  const [formData, setFormData] = useState<Omit<LecturerModule, 'id' | 'created_at'>>({
     lecturer_name: '',
     module_name: '',
     module_description: '',
@@ -23,17 +29,19 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) =
     is_active: true
   });
 
+  // Only update form data when the module prop changes and is different from current form data
   useEffect(() => {
     if (module) {
-      setFormData({
+      setFormData(prevState => ({
+        ...prevState,
         lecturer_name: module.lecturer_name,
         module_name: module.module_name,
         module_description: module.module_description,
         module_objectives: module.module_objectives || '',
         email: module.email || '',
         is_active: module.is_active
-      });
-    }
+      }));
+    } 
   }, [module]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,6 +64,7 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) =
                 value={formData.lecturer_name}
                 onChange={(e) => setFormData({ ...formData, lecturer_name: e.target.value })}
                 required
+                disabled={isSubmitting}
               />
             </div>
             
@@ -66,6 +75,7 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) =
                 value={formData.module_name}
                 onChange={(e) => setFormData({ ...formData, module_name: e.target.value })}
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -77,6 +87,7 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) =
               value={formData.module_description}
               onChange={(e) => setFormData({ ...formData, module_description: e.target.value })}
               required
+              disabled={isSubmitting}
             />
           </div>
 
@@ -86,6 +97,7 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) =
               id="module_objectives"
               value={formData.module_objectives}
               onChange={(e) => setFormData({ ...formData, module_objectives: e.target.value })}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -96,24 +108,31 @@ const ModuleForm: React.FC<ModuleFormProps> = ({ module, onSubmit, onCancel }) =
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              disabled={isSubmitting}
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 pt-2">
             <Switch
               id="is_active"
               checked={formData.is_active}
               onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+              disabled={isSubmitting}
             />
-            <Label htmlFor="is_active">Active for Rating</Label>
+            <Label htmlFor="is_active">Active</Label>
           </div>
 
-          <div className="flex space-x-2">
-            <Button type="submit">
-              {module ? 'Update' : 'Create'} Module
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel}>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
               Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>

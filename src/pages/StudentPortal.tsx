@@ -5,7 +5,7 @@ import Layout from '@/components/Layout';
 import RatingForm from '@/components/RatingForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Star, CheckCircle, Home, ArrowLeft, Loader2 } from 'lucide-react';
+import { Star, CheckCircle, Home, ArrowLeft, Loader2, X } from 'lucide-react';
 
 interface StudentPortalProps {
   onBack?: () => void;
@@ -100,110 +100,115 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     );
   }
 
-  if (error) {
-    return (
-      <Layout title="Student Portal">
-        <div className="p-4 text-red-600">{error}</div>
-      </Layout>
-    );
-  }
-
-  if (showRatingForm && selectedModule) {
-    return (
-      <Layout title="Student Portal">
-        <div className="container mx-auto px-4 py-8">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowRatingForm(false);
-              setSelectedModule(null);
-            }}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Modules
-          </Button>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Rate {selectedModule.module_name}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Lecturer: {selectedModule.lecturer_name}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <RatingForm
-                onSubmit={handleSubmitRating}
-                isSubmitting={isSubmitting}
-              />
-              {error && <div className="mt-4 text-red-600">{error}</div>}
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout title="Student Portal">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Available Modules</h1>
-          {onBack && (
-            <Button variant="outline" onClick={onBack}>
-              <Home className="h-4 w-4 mr-2" />
-              Back to Home
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md relative">
+            <div className="flex justify-between items-center">
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-500 hover:text-red-700"
+                aria-label="Dismiss error"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showRatingForm && selectedModule ? (
+          <div className="container mx-auto px-4 py-8">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowRatingForm(false);
+                setSelectedModule(null);
+              }}
+              className="mb-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Modules
             </Button>
-          )}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((module) => {
-            const avgRating = getAverageRating(module.id);
-            const alreadyRated = hasRatedModule(module.id);
             
-            return (
-              <Card key={module.id} className="relative">
-                <CardHeader>
-                  <CardTitle className="text-lg">{module.module_name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Lecturer: {module.lecturer_name}
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm mb-4">{module.module_description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                      <span className="text-sm">
-                        {avgRating > 0 ? `${avgRating}/5` : 'No ratings yet'}
-                      </span>
-                    </div>
-                    <Button
-                      onClick={() => handleRateModule(module)}
-                      disabled={alreadyRated}
-                      variant={alreadyRated ? 'outline' : 'default'}
-                      className={alreadyRated ? 'opacity-100' : ''}
-                    >
-                      {alreadyRated ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Rated
-                        </>
-                      ) : (
-                        'Rate Module'
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Rate {selectedModule.module_name}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Lecturer: {selectedModule.lecturer_name}
+                </p>
+              </CardHeader>
+              <CardContent>
+                <RatingForm
+                  onSubmit={handleSubmitRating}
+                  isSubmitting={isSubmitting}
+                />
+                {error && <div className="mt-4 text-red-600">{error}</div>}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div>
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-2xl font-bold">Available Modules</h1>
+              {onBack && (
+                <Button variant="outline" onClick={onBack}>
+                  <Home className="h-4 w-4 mr-2" />
+                  Back to Home
+                </Button>
+              )}
+            </div>
 
-        {modules.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No active modules available for rating.</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {modules.map((module) => {
+                const avgRating = getAverageRating(module.id);
+                const alreadyRated = hasRatedModule(module.id);
+                
+                return (
+                  <Card key={module.id} className="relative">
+                    <CardHeader>
+                      <CardTitle className="text-lg">{module.module_name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Lecturer: {module.lecturer_name}
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm mb-4">{module.module_description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                          <span className="text-sm">
+                            {avgRating > 0 ? `${avgRating}/5` : 'No ratings yet'}
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => handleRateModule(module)}
+                          disabled={alreadyRated}
+                          variant={alreadyRated ? 'outline' : 'default'}
+                          className={alreadyRated ? 'opacity-100' : ''}
+                        >
+                          {alreadyRated ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Rated
+                            </>
+                          ) : (
+                            'Rate Module'
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {modules.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No active modules available for rating.</p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -6,7 +6,8 @@ import ModuleForm from '@/components/ModuleForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, BarChart3, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, BarChart3, Eye, X } from 'lucide-react';
+
 interface AdminDashboardProps {
   onViewReports: () => void;
 }
@@ -15,6 +16,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
   const [modules, setModules] = useState<LecturerModule[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingModule, setEditingModule] = useState<LecturerModule | undefined>();
+  const [newModule, setNewModule] = useState<LecturerModule | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +37,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
     loadModules();
   }, []);
 
-  const handleSubmit = async (moduleData: Omit<LecturerModule, 'id' | 'created_at' | 'is_active'>) => {
+  const handleSubmit = async (moduleData: Omit<LecturerModule, 'id' | 'created_at'>) => {
     setIsLoading(true);
     setError(null);
     
@@ -49,15 +51,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
         setModules(modules.map(m => m.id === editingModule.id ? updatedModule : m));
       } else {
         // Create new module
+        setNewModule({...moduleData, id: "", created_at: ""});      
         updatedModule = await saveModule(moduleData);
         setModules([...modules, updatedModule]);
       }
       
+      // Only clear the form if the save was successful
       setShowForm(false);
       setEditingModule(undefined);
+      setNewModule(undefined);      
     } catch (err) {
-      setError('Failed to save module');
+      setError('Failed to save module. Please try again.');
       console.error('Error saving module:', err);
+      // Don't clear the form or editing state on error
     } finally {
       setIsLoading(false);
     }
@@ -84,17 +90,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
     );
   }
 
-  if (error) {
-    return (
-      <Layout title="Admin Dashboard">
-        <div className="p-4 text-red-600">{error}</div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout title="Admin Dashboard">
       <div className="container mx-auto px-4 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md relative">
+            <div className="flex justify-between items-center">
+              <p className="text-red-700">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-500 hover:text-red-700"
+                aria-label="Dismiss error"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <div className="space-x-2">
@@ -119,11 +132,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
             </CardHeader>
             <CardContent>
               <ModuleForm
-                module={editingModule}
+                module={editingModule || newModule}
                 onSubmit={handleSubmit}
                 onCancel={() => {
                   setShowForm(false);
                   setEditingModule(undefined);
+                  setNewModule(undefined);
                 }}
                 isSubmitting={isLoading}
               />
