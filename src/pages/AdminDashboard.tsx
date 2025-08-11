@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { LecturerModule } from '@/types';
-import { deleteModule, getModules, saveModule, updateModule } from '@/utils/storage-helpers';
+import { LecturerModule, Rating } from '@/types';
+import { deleteModule, getModules, getRatings, saveModule, updateModule } from '@/utils/storage-helpers';
 import Layout from '@/components/Layout';
 import ModuleForm from '@/components/ModuleForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, BarChart3, Eye, X } from 'lucide-react';
+import { Plus, Edit, Trash2, BarChart3, Eye, X, Star } from 'lucide-react';
 
 interface AdminDashboardProps {
   onViewReports: () => void;
@@ -19,12 +19,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
   const [newModule, setNewModule] = useState<LecturerModule | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+    const [ratings, setRatings] = useState<Rating[]>([]);
+  
 
   const loadModules = async () => {
     setIsLoading(true);
     try {
-      const data = await getModules();
-      setModules(data);
+     const [modulesData, ratingsData] = await Promise.all([
+               getModules(),
+               getRatings()
+             ]);
+      setModules(modulesData);
+      setRatings(ratingsData);
       setError(null);
     } catch (err) {
       setError('Failed to load modules');
@@ -78,6 +84,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
     setShowForm(true);
   };
 
+
+    const getAverageRating = (moduleId: number): number => {
+      const moduleRatings = ratings.filter(
+        (r) => r.lecturer_module_id === moduleId
+      );
+      if (moduleRatings.length === 0) return 0;
+
+      const total = moduleRatings.reduce(
+        (sum, r) =>
+          sum +
+          r.criteria_1_score +
+          r.criteria_2_score +
+          r.criteria_3_score +
+          r.criteria_4_score +
+          r.criteria_5_score,
+        0
+      );
+      return Math.round((total / (moduleRatings.length * 5)) * 10) / 10;
+    };
   if (isLoading) {
     return (
       <Layout title="Admin Dashboard">
@@ -144,39 +169,56 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((module) => (
-            <Card key={module.id} className="relative">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{module.module_name}</CardTitle>
-                  <Badge variant={module.is_active ? 'default' : 'secondary'}>
-                    {module.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{module.lecturer_name}</p>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm mb-4">{module.module_description}</p>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(module)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(module.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {modules.map((module) => {
+            const avgRating = getAverageRating(module.id);
+            return (
+              <Card key={module.id} className="relative">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">
+                      {module.module_name}
+                    </CardTitle>
+                    <Badge variant={module.is_active ? "default" : "secondary"}>
+                      {module.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {module.lecturer_name}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm mb-4">{module.module_description}</p>
+                  <div className="flex justify-end space-x-2">
+                    <div className="flex items-center">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <span className="text-sm">
+                        {avgRating > 0 ? `${avgRating}/5` : "No ratings yet"}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(module)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(module.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+        }
+          )
+          
+          
+          }
         </div>
       </div>
     </Layout>

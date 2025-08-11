@@ -14,51 +14,94 @@ interface ReportsProps {
 const Reports: React.FC<ReportsProps> = ({ onBack }) => {
   const [reports, setReports] = useState<ModuleReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ModuleReport | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const modules = getModules();
-    const ratings = getRatings();
+    const loadReports = async () => {
+      try {
+        setIsLoading(true);
+        const [modules, ratings] = await Promise.all([
+          getModules(),
+          getRatings()
+        ]);
 
-    const moduleReports: ModuleReport[] = modules.map(module => {
-      const moduleRatings = ratings.filter(r => r.lecturer_module_id === module.id);
-      
-      if (moduleRatings.length === 0) {
-        return {
-          module,
-          ratings: [],
-          averages: {
-            criteria_1: 0,
-            criteria_2: 0,
-            criteria_3: 0,
-            criteria_4: 0,
-            criteria_5: 0,
-            overall: 0
-          },
-          totalRatings: 0
-        };
+        const moduleReports: ModuleReport[] = modules.map(module => {
+          const moduleRatings = ratings.filter(r => r.lecturer_module_id === module.id);
+          
+          if (moduleRatings.length === 0) {
+            return {
+              module,
+              ratings: [],
+              averages: {
+                criteria_1: 0,
+                criteria_2: 0,
+                criteria_3: 0,
+                criteria_4: 0,
+                criteria_5: 0,
+                overall: 0
+              },
+              totalRatings: 0
+            };
+          }
+
+          const sums = moduleRatings.reduce(
+            (acc, rating) => ({
+              criteria_1: acc.criteria_1 + rating.criteria_1_score,
+              criteria_2: acc.criteria_2 + rating.criteria_2_score,
+              criteria_3: acc.criteria_3 + rating.criteria_3_score,
+              criteria_4: acc.criteria_4 + rating.criteria_4_score,
+              criteria_5: acc.criteria_5 + rating.criteria_5_score,
+            }),
+            { criteria_1: 0, criteria_2: 0, criteria_3: 0, criteria_4: 0, criteria_5: 0 }
+          );
+
+          const averages = {
+            criteria_1: sums.criteria_1 / moduleRatings.length,
+            criteria_2: sums.criteria_2 / moduleRatings.length,
+            criteria_3: sums.criteria_3 / moduleRatings.length,
+            criteria_4: sums.criteria_4 / moduleRatings.length,
+            criteria_5: sums.criteria_5 / moduleRatings.length,
+            overall: (sums.criteria_1 + sums.criteria_2 + sums.criteria_3 + sums.criteria_4 + sums.criteria_5) / (5 * moduleRatings.length)
+          };
+
+          return {
+            module,
+            ratings: moduleRatings,
+            averages,
+            totalRatings: moduleRatings.length
+          };
+        });
+
+        setReports(moduleReports);
+      } catch (err) {
+        console.error('Error loading reports:', err);
+        setError('Failed to load reports. Please try again later.');
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      const averages = {
-        criteria_1: moduleRatings.reduce((sum, r) => sum + r.criteria_1_score, 0) / moduleRatings.length,
-        criteria_2: moduleRatings.reduce((sum, r) => sum + r.criteria_2_score, 0) / moduleRatings.length,
-        criteria_3: moduleRatings.reduce((sum, r) => sum + r.criteria_3_score, 0) / moduleRatings.length,
-        criteria_4: moduleRatings.reduce((sum, r) => sum + r.criteria_4_score, 0) / moduleRatings.length,
-        criteria_5: moduleRatings.reduce((sum, r) => sum + r.criteria_5_score, 0) / moduleRatings.length,
-        overall: 0
-      };
-
-      averages.overall = (averages.criteria_1 + averages.criteria_2 + averages.criteria_3 + averages.criteria_4 + averages.criteria_5) / 5;
-
-      return {
-        module,
-        ratings: moduleRatings,
-        averages,
-        totalRatings: moduleRatings.length
-      };
-    });
-
-    setReports(moduleReports);
+    loadReports();
   }, []);
+
+  if (isLoading) {
+    return (
+      <Layout title="Reports">
+        <div className="flex items-center justify-center h-64">
+          <div>Loading reports...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="Error">
+        <div className="p-4 text-red-600">{error}</div>
+      </Layout>
+    );
+  }
 
   const exportReport = (report: ModuleReport) => {
     const csvContent = [

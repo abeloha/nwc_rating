@@ -41,10 +41,10 @@ const Index: React.FC = () => {
         <div className="text-center mb-12">
           <BarChart3 className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Lecturer Assessment Feedback System
+            NWC Lecturer Assessment System
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            A comprehensive platform for students to provide anonymous feedback on their lecturers 
+            A comprehensive platform for participants to provide anonymous feedback on their guest lecturers 
             and for administrators to track and improve educational quality.
           </p>
         </div>
@@ -54,14 +54,14 @@ const Index: React.FC = () => {
                 onClick={() => setCurrentView('student')}>
             <CardHeader className="text-center">
               <GraduationCap className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <CardTitle className="text-2xl">Student Portal</CardTitle>
+              <CardTitle className="text-2xl">Rating Portal</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600 mb-6">
-                Rate your lecturers anonymously and help improve the quality of education.
+                Rate your guest lecturers anonymously and help improve the quality of education.
               </p>
               <Button className="w-full" size="lg">
-                Access Student Portal
+                Access Rating Portal
               </Button>
             </CardContent>
           </Card>
@@ -74,7 +74,7 @@ const Index: React.FC = () => {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600 mb-6">
-                Manage lecturer modules, view reports, and analyze feedback data.
+                Manage lecturers, view reports, and analyze feedback data.
               </p>
               <Button className="w-full" variant="outline" size="lg">
                 Admin Login
@@ -91,7 +91,7 @@ const Index: React.FC = () => {
                 <GraduationCap className="h-6 w-6 text-blue-600" />
               </div>
               <h3 className="font-semibold mb-2">Anonymous Feedback</h3>
-              <p className="text-sm text-gray-600">Students can provide honest feedback without revealing their identity.</p>
+              <p className="text-sm text-gray-600">Participants can provide honest feedback without revealing their identity.</p>
             </div>
             <div className="text-center">
               <div className="bg-green-100 rounded-full p-3 w-12 h-12 mx-auto mb-4">
@@ -105,7 +105,7 @@ const Index: React.FC = () => {
                 <Users className="h-6 w-6 text-purple-600" />
               </div>
               <h3 className="font-semibold mb-2">Easy Management</h3>
-              <p className="text-sm text-gray-600">Simple interface for managing modules and viewing results.</p>
+              <p className="text-sm text-gray-600">Simple interface for managing lecturers and viewing results.</p>
             </div>
           </div>
         </div>

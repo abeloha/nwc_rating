@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LecturerModule, Rating } from '@/types';
-import { getModules, getRatings, saveRating, hasRatedModule, addRatedModule } from '@/utils/storage-helpers';
+import { getModules, saveRating, hasRatedModule, addRatedModule } from '@/utils/storage-helpers';
 import Layout from '@/components/Layout';
 import RatingForm from '@/components/RatingForm';
 import { Button } from '@/components/ui/button';
@@ -18,18 +18,15 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [selectedModule, setSelectedModule] = useState<LecturerModule | null>(null);
-  const [ratings, setRatings] = useState<Rating[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [modulesData, ratingsData] = await Promise.all([
+        const [modulesData] = await Promise.all([
           getModules(),
-          getRatings()
         ]);
         setModules(modulesData.filter(m => m.is_active));
-        setRatings(ratingsData);
       } catch (err) {
         setError('Failed to load data');
         console.error('Error loading data:', err);
@@ -67,7 +64,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
       const savedRating = await saveRating(newRating);
       
       // Update local state
-      setRatings([...ratings, savedRating]);
       addRatedModule(selectedModule.id);
       
       // Close the form
@@ -80,14 +76,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const getAverageRating = (moduleId: number): number => {
-    const moduleRatings = ratings.filter(r => r.lecturer_module_id === moduleId);
-    if (moduleRatings.length === 0) return 0;
-    
-    const total = moduleRatings.reduce((sum, r) => sum + r.criteria_1_score + r.criteria_2_score + r.criteria_3_score + r.criteria_4_score + r.criteria_5_score, 0);
-    return Math.round((total / (moduleRatings.length * 5)) * 10) / 10;
   };
 
   if (isLoading) {
@@ -167,7 +155,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {modules.map((module) => {
-                const avgRating = getAverageRating(module.id);
                 const alreadyRated = hasRatedModule(module.id);
                 
                 return (
@@ -181,12 +168,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
                     <CardContent>
                       <p className="text-sm mb-4">{module.module_description}</p>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                          <span className="text-sm">
-                            {avgRating > 0 ? `${avgRating}/5` : 'No ratings yet'}
-                          </span>
-                        </div>
                         <Button
                           onClick={() => handleRateModule(module)}
                           disabled={alreadyRated}

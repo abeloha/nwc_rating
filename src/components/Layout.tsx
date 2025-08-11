@@ -19,7 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
             <div className="flex items-center space-x-3">
               <BarChart3 className="h-8 w-8 text-indigo-600" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Lecturer Assessment System</h1>
+                <h1 className="text-xl font-bold text-gray-900">NWC Lecturer Assessment System</h1>
                 <p className="text-sm text-gray-600">{title}</p>
               </div>
             </div>

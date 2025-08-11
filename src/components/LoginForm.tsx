@@ -42,7 +42,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
             Admin Login
           </CardTitle>
           <CardDescription>
-            Access the Lecturer Assessment System
+            Access the NWC Lecturer Assessment System
           </CardDescription>
         </CardHeader>
         <CardContent>
