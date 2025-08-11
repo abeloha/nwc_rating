@@ -1,0 +1,7 @@
+
+
+
+
+
+Migrate first time: Note, it will delete existing db data
+npx prisma migrate dev --name update_schema
