@@ -1,37 +1,42 @@
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Home, Lock, Mail } from 'lucide-react';
+import React, { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Home, Lock, Mail } from "lucide-react";
 
 interface LoginFormProps {
   onBack?: () => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const success = await login(email, password);
-      
-      if (!success) {
-        setError('Invalid email or password');
-      }
 
+      if (!success) {
+        setError("Invalid email or password");
+      }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
       setError("Invalid email or password");
     } finally {
       setLoading(false);
@@ -61,7 +66,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
-                  placeholder="admin@university.edu"
+                  placeholder="Enter your email"
                   required
                   disabled={loading}
                 />
@@ -85,18 +90,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
               </div>
             </div>
 
-            {error && (
-              <div className="text-red-600 text-sm mt-2">
-                {error}
-              </div>
-            )}
+            {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading ? 'Logging in...' : 'Sign In'}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Logging in..." : "Sign In"}
             </Button>
 
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -119,7 +116,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
               <>
                 <br />
                 <Button variant="outline" onClick={onBack}>
-                <Home className="h-4 w-4 mr-2" />
+                  <Home className="h-4 w-4 mr-2" />
                   Back to Home
                 </Button>
               </>
