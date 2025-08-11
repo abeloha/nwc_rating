@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LecturerModule } from '@/types';
-import { getModules, saveModule } from '@/utils/storage-helpers';
+import { deleteModule, getModules, saveModule, updateModule } from '@/utils/storage-helpers';
 import Layout from '@/components/Layout';
 import ModuleForm from '@/components/ModuleForm';
 import { Button } from '@/components/ui/button';
@@ -20,20 +20,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const loadModules = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getModules();
+      setModules(data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load modules');
+      console.error('Error loading modules:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadModules = async () => {
-      setIsLoading(true);
-      try {
-        const data = await getModules();
-        setModules(data);
-      } catch (err) {
-        setError('Failed to load modules');
-        console.error('Error loading modules:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadModules();
   }, []);
 
@@ -45,34 +46,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
       let updatedModule: LecturerModule;
       
       if (editingModule) {
-        // For updates, we'll need to implement an update endpoint
-        // For now, we'll treat it as a new module
-        updatedModule = await saveModule(moduleData);
-        setModules(modules.map(m => m.id === editingModule.id ? updatedModule : m));
+        // Update existing module
+        updatedModule = await updateModule(moduleData, editingModule.id);
       } else {
         // Create new module
-        setNewModule({...moduleData, id: "", created_at: ""});      
         updatedModule = await saveModule(moduleData);
-        setModules([...modules, updatedModule]);
       }
       
-      // Only clear the form if the save was successful
+      // Reload modules from the server to ensure we have the latest data
+      await loadModules();
+      
+      // Close the form
       setShowForm(false);
       setEditingModule(undefined);
-      setNewModule(undefined);      
+      setNewModule(undefined);
     } catch (err) {
       setError('Failed to save module. Please try again.');
       console.error('Error saving module:', err);
-      // Don't clear the form or editing state on error
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = (id: string) => {
-    // In a real app, you would call a delete API endpoint here
-    // For now, we'll just update the local state
-    setModules(modules.filter(m => m.id !== id));
+  const handleDelete = (id: number) => {
+    deleteModule(id);
+    loadModules();
   };
 
   const handleEdit = (module: LecturerModule) => {

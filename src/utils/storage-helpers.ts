@@ -5,17 +5,41 @@ const STORAGE_KEYS = {
   ADMIN: 'admin'
 };
 
-// API base URL - use relative URL in the browser, full URL in server-side rendering
-const getApiBaseUrl = () => {
-  // In the browser, we'll use relative URLs
-  if (typeof window !== 'undefined') {
-    return '';
-  }
-  // In server-side rendering, use the environment variable or default to empty string
-  return process.env.NEXT_PUBLIC_API_BASE_URL || '';
-};
+// API base URL configuration
+const API_BASE_URL = 'http://localhost:8000/api';
 
-const API_BASE_URL = getApiBaseUrl();
+// Remove any trailing slashes from the API base URL
+const normalizeUrl = (url: string) => url.replace(/\/+$/, '');
+
+// API request helper
+const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+  const url = `${normalizeUrl(API_BASE_URL)}${endpoint}`;
+  console.log('API Request:', url, options); // Debug log
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      credentials: 'include',
+    });
+
+    const responseData = await response.json();
+    console.log('API Response:', responseData); // Debug log
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`, { cause: responseData });
+    }
+
+    // If the response has a 'data' property, return that, otherwise return the whole response
+    return responseData.data !== undefined ? responseData.data : responseData;
+  } catch (error) {
+    console.error('API Request Error:', error);
+    throw error;
+  }
+};
 
 // Keep these in localStorage as they're used for anonymous tracking
 export const getRatedModules = (): string[] => {
@@ -38,57 +62,12 @@ export const hasRatedModule = (moduleId: string): boolean => {
   return getRatedModules().includes(moduleId);
 };
 
-// Helper function to handle API requests
-const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-      },
-      credentials: 'include' // Important for cookies if using sessions
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'Request failed';
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        // If we can't parse the error JSON, use the status text
-        errorMessage = response.statusText || errorMessage;
-      }
-      throw new Error(errorMessage);
-    }
-
-    // Handle empty responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('Invalid response format: expected JSON');
-    }
-
-    const data = await response.json();
-    
-    // Check for API error response format
-    if (data && data.success === false) {
-      throw new Error(data.error || 'API request failed');
-    }
-    
-    // Return the data property if it exists (our API wraps responses in { success: true, data: ... })
-    return data.data !== undefined ? data.data : data;
-  } catch (error) {
-    console.error(`API request failed for ${endpoint}:`, error);
-    throw error;
-  }
-};
-
 // API-based storage functions
 export const getModules = async (): Promise<LecturerModule[]> => {
+  console.log("GetModules");
+  console.log("API_BASE_URL", API_BASE_URL);
   try {
-    const data = await apiRequest<LecturerModule[]>('/api/modules');
+    const data = await apiRequest<LecturerModule[]>('/modules');
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error fetching modules:', error);
@@ -96,9 +75,9 @@ export const getModules = async (): Promise<LecturerModule[]> => {
   }
 };
 
-export const saveModule = async (module: Omit<LecturerModule, 'id' | 'created_at' | 'is_active'>): Promise<LecturerModule> => {
+export const saveModule = async (module: Omit<LecturerModule, 'id' | 'created_at'>): Promise<LecturerModule> => {
   try {
-    return await apiRequest<LecturerModule>('/api/modules', {
+    return await apiRequest<LecturerModule>('/modules', {
       method: 'POST',
       body: JSON.stringify(module),
     });
@@ -108,11 +87,34 @@ export const saveModule = async (module: Omit<LecturerModule, 'id' | 'created_at
   }
 };
 
-export const getRatings = async (lecturerModuleId?: string): Promise<Rating[]> => {
+export const updateModule = async (module: Omit<LecturerModule, 'id' | 'created_at'>, moduleId: number): Promise<LecturerModule> => {
+  try {
+    return await apiRequest<LecturerModule>('/modules/' + moduleId, {
+      method: 'PUT',
+      body: JSON.stringify(module),
+    });
+  } catch (error) {
+    console.error('Error updating module:', error);
+    throw error;
+  }
+};
+
+export const deleteModule = async (moduleId: number): Promise<void> => {
+  try {
+    await apiRequest<LecturerModule>('/modules/' + moduleId, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Error deleting module:', error);
+    throw error;
+  }
+};
+
+export const getRatings = async (lecturerModuleId?: number): Promise<Rating[]> => {
   try {
     const endpoint = lecturerModuleId 
-      ? `/api/ratings?lecturerModuleId=${encodeURIComponent(lecturerModuleId)}`
-      : '/api/ratings';
+      ? `/ratings?lecturerModuleId=${encodeURIComponent(lecturerModuleId)}`
+      : '/ratings';
     
     const data = await apiRequest<Rating[]>(endpoint);
     return Array.isArray(data) ? data : [];
@@ -124,7 +126,7 @@ export const getRatings = async (lecturerModuleId?: string): Promise<Rating[]> =
 
 export const saveRating = async (rating: Omit<Rating, 'id' | 'created_at'>): Promise<Rating> => {
   try {
-    return await apiRequest<Rating>('/api/ratings', {
+    return await apiRequest<Rating>('/ratings', {
       method: 'POST',
       body: JSON.stringify(rating),
     });

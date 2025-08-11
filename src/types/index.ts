@@ -1,5 +1,5 @@
 export interface LecturerModule {
-  id: string;
+  id: number;
   lecturer_name: string;
   module_name: string;
   module_description: string;
@@ -10,8 +10,8 @@ export interface LecturerModule {
 }
 
 export interface Rating {
-  id: string;
-  lecturer_module_id: string;
+  id: number;
+  lecturer_module_id: number;
   criteria_1_score: number;
   criteria_2_score: number;
   criteria_3_score: number;
