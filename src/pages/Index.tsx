@@ -7,7 +7,7 @@ import StudentPortal from './StudentPortal';
 import Reports from './Reports';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BarChart3, GraduationCap } from 'lucide-react';
+import { Users, GraduationCap } from 'lucide-react';
 
 type View = 'home' | 'admin' | 'student' | 'reports';
 
@@ -39,7 +39,7 @@ const Index: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <BarChart3 className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
+          <img src="/logo.png" alt="NWC Logo" className="h-16 w-auto mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             NWC Lecturer Assessment System
           </h1>
@@ -95,7 +95,7 @@ const Index: React.FC = () => {
             </div>
             <div className="text-center">
               <div className="bg-green-100 rounded-full p-3 w-12 h-12 mx-auto mb-4">
-                <BarChart3 className="h-6 w-6 text-green-600" />
+                <Users className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="font-semibold mb-2">Detailed Analytics</h3>
               <p className="text-sm text-gray-600">Comprehensive reports with averages and individual feedback.</p>
