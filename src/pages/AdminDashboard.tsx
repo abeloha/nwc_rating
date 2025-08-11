@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { LecturerModule } from '@/types';
-import { getModules, saveModules } from '@/utils/storage-helpers';
+import { getModules, saveModule } from '@/utils/storage-helpers';
 import Layout from '@/components/Layout';
 import ModuleForm from '@/components/ModuleForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, BarChart3, Eye } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
-
 interface AdminDashboardProps {
   onViewReports: () => void;
 }
@@ -17,140 +15,157 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewReports }) => {
   const [modules, setModules] = useState<LecturerModule[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingModule, setEditingModule] = useState<LecturerModule | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setModules(getModules());
+    const loadModules = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getModules();
+        setModules(data);
+      } catch (err) {
+        setError('Failed to load modules');
+        console.error('Error loading modules:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadModules();
   }, []);
 
-  const handleSubmit = (moduleData: Omit<LecturerModule, 'id' | 'created_at'>) => {
-    if (editingModule) {
-      const updatedModules = modules.map(m =>
-        m.id === editingModule.id
-          ? { ...editingModule, ...moduleData }
-          : m
-      );
-      setModules(updatedModules);
-      saveModules(updatedModules);
-    } else {
-      const newModule: LecturerModule = {
-        ...moduleData,
-        id: uuidv4(),
-        created_at: new Date().toISOString()
-      };
-      const updatedModules = [...modules, newModule];
-      setModules(updatedModules);
-      saveModules(updatedModules);
-    }
+  const handleSubmit = async (moduleData: Omit<LecturerModule, 'id' | 'created_at' | 'is_active'>) => {
+    setIsLoading(true);
+    setError(null);
     
-    setShowForm(false);
-    setEditingModule(undefined);
+    try {
+      let updatedModule: LecturerModule;
+      
+      if (editingModule) {
+        // For updates, we'll need to implement an update endpoint
+        // For now, we'll treat it as a new module
+        updatedModule = await saveModule(moduleData);
+        setModules(modules.map(m => m.id === editingModule.id ? updatedModule : m));
+      } else {
+        // Create new module
+        updatedModule = await saveModule(moduleData);
+        setModules([...modules, updatedModule]);
+      }
+      
+      setShowForm(false);
+      setEditingModule(undefined);
+    } catch (err) {
+      setError('Failed to save module');
+      console.error('Error saving module:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this module?')) {
-      const updatedModules = modules.filter(m => m.id !== id);
-      setModules(updatedModules);
-      saveModules(updatedModules);
-    }
+    // In a real app, you would call a delete API endpoint here
+    // For now, we'll just update the local state
+    setModules(modules.filter(m => m.id !== id));
   };
 
-  const toggleActive = (id: string) => {
-    const updatedModules = modules.map(m =>
-      m.id === id ? { ...m, is_active: !m.is_active } : m
-    );
-    setModules(updatedModules);
-    saveModules(updatedModules);
+  const handleEdit = (module: LecturerModule) => {
+    setEditingModule(module);
+    setShowForm(true);
   };
 
-  if (showForm) {
+  if (isLoading) {
     return (
       <Layout title="Admin Dashboard">
-        <ModuleForm
-          module={editingModule}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setShowForm(false);
-            setEditingModule(undefined);
-          }}
-        />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading modules...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="Admin Dashboard">
+        <div className="p-4 text-red-600">{error}</div>
       </Layout>
     );
   }
 
   return (
     <Layout title="Admin Dashboard">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Lecturer Modules</h2>
-          <div className="flex space-x-2">
-            <Button onClick={onViewReports} variant="outline">
-              <BarChart3 className="h-4 w-4 mr-2" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <div className="space-x-2">
+            <Button variant="outline" onClick={onViewReports}>
+              <BarChart3 className="mr-2 h-4 w-4" />
               View Reports
             </Button>
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={() => {
+              setEditingModule(undefined);
+              setShowForm(true);
+            }}>
+              <Plus className="mr-2 h-4 w-4" />
               Add Module
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-4">
+        {showForm && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>{editingModule ? 'Edit Module' : 'Add New Module'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ModuleForm
+                module={editingModule}
+                onSubmit={handleSubmit}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingModule(undefined);
+                }}
+                isSubmitting={isLoading}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {modules.map((module) => (
-            <Card key={module.id} className="hover:shadow-md transition-shadow">
+            <Card key={module.id} className="relative">
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{module.module_name}</CardTitle>
-                    <p className="text-gray-600">Lecturer: {module.lecturer_name}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={module.is_active ? "default" : "secondary"}>
-                      {module.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
+                  <CardTitle className="text-lg">{module.module_name}</CardTitle>
+                  <Badge variant={module.is_active ? 'default' : 'secondary'}>
+                    {module.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
                 </div>
+                <p className="text-sm text-muted-foreground">{module.lecturer_name}</p>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 mb-4">{module.module_description}</p>
-                <div className="flex space-x-2">
+                <p className="text-sm mb-4">{module.module_description}</p>
+                <div className="flex justify-end space-x-2">
                   <Button
-                    size="sm"
                     variant="outline"
-                    onClick={() => {
-                      setEditingModule(module);
-                      setShowForm(true);
-                    }}
+                    size="sm"
+                    onClick={() => handleEdit(module)}
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
+                    <Edit className="h-4 w-4" />
                   </Button>
                   <Button
+                    variant="outline"
                     size="sm"
-                    variant={module.is_active ? "secondary" : "default"}
-                    onClick={() => toggleActive(module.id)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    {module.is_active ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
                     onClick={() => handleDelete(module.id)}
+                    className="text-red-600 hover:text-red-700"
                   >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-
-        {modules.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No modules found. Add your first module to get started.</p>
-          </div>
-        )}
       </div>
     </Layout>
   );

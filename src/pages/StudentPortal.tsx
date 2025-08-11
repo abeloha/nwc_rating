@@ -1,26 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { LecturerModule, Rating } from '@/types';
-import { getModules, getRatings, saveRatings, hasRatedModule, addRatedModule } from '@/utils/storage-helpers';
+import { getModules, getRatings, saveRating, hasRatedModule, addRatedModule } from '@/utils/storage-helpers';
 import Layout from '@/components/Layout';
 import RatingForm from '@/components/RatingForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Star, CheckCircle, Home, ArrowLeft } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { Star, CheckCircle, Home, ArrowLeft, Loader2 } from 'lucide-react';
 
 interface StudentPortalProps {
   onBack?: () => void;
 }
+
 const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
   const [modules, setModules] = useState<LecturerModule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [selectedModule, setSelectedModule] = useState<LecturerModule | null>(null);
+  const [ratings, setRatings] = useState<Rating[]>([]);
 
   useEffect(() => {
-    const allModules = getModules();
-    const activeModules = allModules.filter(m => m.is_active);
-    setModules(activeModules);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [modulesData, ratingsData] = await Promise.all([
+          getModules(),
+          getRatings()
+        ]);
+        setModules(modulesData.filter(m => m.is_active));
+        setRatings(ratingsData);
+      } catch (err) {
+        setError('Failed to load data');
+        console.error('Error loading data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
   const handleRateModule = (module: LecturerModule) => {
@@ -32,116 +50,151 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     setShowRatingForm(true);
   };
 
-  const handleSubmitRating = (ratingData: {
-    criteria_1_score: number;
-    criteria_2_score: number;
-    criteria_3_score: number;
-    criteria_4_score: number;
-    criteria_5_score: number;
-    remarks?: string;
-  }) => {
+  const handleSubmitRating = async (ratingData: Omit<Rating, 'id' | 'created_at' | 'lecturerModuleId' | 'module_name' | 'lecturer_name'>) => {
     if (!selectedModule) return;
 
-    const newRating: Rating = {
-      id: uuidv4(),
-      lecturer_module_id: selectedModule.id,
-      ...ratingData,
-      created_at: new Date().toISOString()
-    };
+    setIsSubmitting(true);
+    setError(null);
 
-    const ratings = getRatings();
-    ratings.push(newRating);
-    saveRatings(ratings);
-    addRatedModule(selectedModule.id);
+    try {
+      const newRating = {
+        ...ratingData,
+        lecturerModuleId: selectedModule.id,
+        module_name: selectedModule.module_name,
+        lecturer_name: selectedModule.lecturer_name,
+      };
 
-    setShowRatingForm(false);
-    setSelectedModule(null);
-    
-    alert('Thank you for your feedback! Your rating has been submitted.');
+      const savedRating = await saveRating(newRating);
+      
+      // Update local state
+      setRatings([...ratings, savedRating]);
+      addRatedModule(selectedModule.id);
+      
+      // Close the form
+      setShowRatingForm(false);
+      setSelectedModule(null);
+      
+    } catch (err) {
+      setError('Failed to submit rating. Please try again.');
+      console.error('Error saving rating:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const getAverageRating = (moduleId: string): number => {
+    const moduleRatings = ratings.filter(r => r.lecturer_module_id === moduleId);
+    if (moduleRatings.length === 0) return 0;
+    
+    const total = moduleRatings.reduce((sum, r) => sum + r.criteria_1_score + r.criteria_2_score + r.criteria_3_score + r.criteria_4_score + r.criteria_5_score, 0);
+    return Math.round((total / (moduleRatings.length * 5)) * 10) / 10;
+  };
+
+  if (isLoading) {
+    return (
+      <Layout title="Student Portal">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="Student Portal">
+        <div className="p-4 text-red-600">{error}</div>
+      </Layout>
+    );
+  }
 
   if (showRatingForm && selectedModule) {
     return (
       <Layout title="Student Portal">
-        <RatingForm
-          module={selectedModule}
-          onSubmit={handleSubmitRating}
-          onCancel={() => {
-            setShowRatingForm(false);
-            setSelectedModule(null);
-          }}
-        />
+        <div className="container mx-auto px-4 py-8">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setShowRatingForm(false);
+              setSelectedModule(null);
+            }}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Modules
+          </Button>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Rate {selectedModule.module_name}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Lecturer: {selectedModule.lecturer_name}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <RatingForm
+                onSubmit={handleSubmitRating}
+                isSubmitting={isSubmitting}
+              />
+              {error && <div className="mt-4 text-red-600">{error}</div>}
+            </CardContent>
+          </Card>
+        </div>
       </Layout>
     );
   }
 
   return (
     <Layout title="Student Portal">
-      <div className="space-y-6">
-        {/* Back to Home Button */}
-        {onBack && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onBack}
-            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800"
-          >
-            <Home className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Button>
-        )}
-
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Rate Your Lecturers</h2>
-          <p className="text-gray-600">Help improve the quality of education by providing anonymous feedback</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold">Available Modules</h1>
+          {onBack && (
+            <Button variant="outline" onClick={onBack}>
+              <Home className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {modules.map((module) => {
+            const avgRating = getAverageRating(module.id);
             const alreadyRated = hasRatedModule(module.id);
             
             return (
-              <Card key={module.id} className="hover:shadow-lg transition-shadow">
+              <Card key={module.id} className="relative">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{module.module_name}</CardTitle>
-                    {alreadyRated && (
-                      <Badge variant="secondary" className="flex items-center space-x-1">
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Rated</span>
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-gray-600">Lecturer: {module.lecturer_name}</p>
+                  <CardTitle className="text-lg">{module.module_name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Lecturer: {module.lecturer_name}
+                  </p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 mb-4 text-sm">{module.module_description}</p>
-                  
-                  {module.module_objectives && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-sm text-gray-900 mb-1">Objectives:</h4>
-                      <p className="text-xs text-gray-600">{module.module_objectives}</p>
+                  <p className="text-sm mb-4">{module.module_description}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <span className="text-sm">
+                        {avgRating > 0 ? `${avgRating}/5` : 'No ratings yet'}
+                      </span>
                     </div>
-                  )}
-
-                  <Button
-                    onClick={() => handleRateModule(module)}
-                    disabled={alreadyRated}
-                    className="w-full"
-                    variant={alreadyRated ? "secondary" : "default"}
-                  >
-                    {alreadyRated ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Already Rated
-                      </>
-                    ) : (
-                      <>
-                        <Star className="h-4 w-4 mr-2" />
-                        Rate This Module
-                      </>
-                    )}
-                  </Button>
+                    <Button
+                      onClick={() => handleRateModule(module)}
+                      disabled={alreadyRated}
+                      variant={alreadyRated ? 'outline' : 'default'}
+                      className={alreadyRated ? 'opacity-100' : ''}
+                    >
+                      {alreadyRated ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Rated
+                        </>
+                      ) : (
+                        'Rate Module'
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -150,7 +203,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
 
         {modules.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No active modules available for rating at the moment.</p>
+            <p className="text-muted-foreground">No active modules available for rating.</p>
           </div>
         )}
       </div>
