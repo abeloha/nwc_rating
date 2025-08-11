@@ -42,13 +42,13 @@ const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promi
 };
 
 // Keep these in localStorage as they're used for anonymous tracking
-export const getRatedModules = (): string[] => {
+export const getRatedModules = (): number[] => {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem(STORAGE_KEYS.RATED_MODULES);
   return data ? JSON.parse(data) : [];
 };
 
-export const addRatedModule = (moduleId: string) => {
+export const addRatedModule = (moduleId: number) => {
   if (typeof window === 'undefined') return;
   const rated = getRatedModules();
   if (!rated.includes(moduleId)) {
@@ -57,7 +57,7 @@ export const addRatedModule = (moduleId: string) => {
   }
 };
 
-export const hasRatedModule = (moduleId: string): boolean => {
+export const hasRatedModule = (moduleId: number): boolean => {
   if (typeof window === 'undefined') return false;
   return getRatedModules().includes(moduleId);
 };
