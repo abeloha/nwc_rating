@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Home, Lock, Mail } from 'lucide-react';
 
-
-
 interface LoginFormProps {
   onBack?: () => void;
 }
@@ -25,13 +23,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
     setError('');
     setLoading(true);
 
-    const success = login(email, password);
-    
-    if (!success) {
-      setError('Invalid email or password');
+    try {
+      const success = await login(email, password);
+      
+      if (!success) {
+        setError('Invalid email or password');
+      }
+
+    } catch (err) {
+      console.error('Login error:', err);
+      setError("Invalid email or password");
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
@@ -59,6 +63,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
                   className="pl-10"
                   placeholder="admin@university.edu"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -75,46 +80,51 @@ const LoginForm: React.FC<LoginFormProps> = ({ onBack }) => {
                   className="pl-10"
                   placeholder="Enter your password"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
 
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <div className="text-red-600 text-sm mt-2">
+                {error}
+              </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+            >
+              {loading ? 'Logging in...' : 'Sign In'}
             </Button>
+
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Forgot Password?</strong>
+                <br />
+                <i>
+                  <a
+                    href="https://portal.navalwarcollegenigeria.org.ng/login"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Reset your password on the main portal.
+                  </a>
+                </i>
+              </p>
+            </div>
+
+            {onBack && (
+              <>
+                <br />
+                <Button variant="outline" onClick={onBack}>
+                <Home className="h-4 w-4 mr-2" />
+                  Back to Home
+                </Button>
+              </>
+            )}
           </form>
-
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Forgot Password?</strong>
-              <br />
-              <i>
-                <a
-                  href="https://portal.navalwarcollegenigeria.org.ng/login"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Reset your password on the main portal.
-                </a>
-              </i>
-            </p>
-          </div>
-
-          {onBack && (
-            <>
-              <br />
-              <Button variant="outline" onClick={onBack}>
-              <Home className="h-4 w-4 mr-2" />
-                Back to Home
-              </Button>
-            </>
-          )}
         </CardContent>
       </Card>
     </div>

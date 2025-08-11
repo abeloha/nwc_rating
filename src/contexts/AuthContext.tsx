@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Admin } from '@/types';
-import { getAdmin } from '@/utils/storage-helpers';
+import { authLogin, deleteAdmin, getAdmin, saveAdmin } from '@/utils/storage-helpers';
 
 interface AuthContextType {
   admin: Admin | null;
@@ -16,22 +16,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const savedAuth = localStorage.getItem('auth_session');
-    if (savedAuth) {
-      const adminData = getAdmin();
-      if (adminData) {
-        setAdmin(adminData);
-        setIsAuthenticated(true);
-      }
+    const adminData = getAdmin();
+    console.log("Admin data:", adminData);
+    if (adminData) {
+      setAdmin(adminData);
+      setIsAuthenticated(true);
     }
   }, []);
 
-  const login = (email: string, password: string): boolean => {
-    const adminData = getAdmin();
-    if (adminData && adminData.email === email && adminData.password === password) {
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const adminData = await authLogin(email, password);
+    if (adminData) {
+      saveAdmin(adminData);
       setAdmin(adminData);
       setIsAuthenticated(true);
-      localStorage.setItem('auth_session', 'true');
       return true;
     }
     return false;
@@ -40,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setAdmin(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('auth_session');
+    deleteAdmin();
   };
 
   return (

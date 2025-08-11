@@ -11,6 +11,7 @@ const API_BASE_URL = 'http://localhost:8000/api';
 // Remove any trailing slashes from the API base URL
 const normalizeUrl = (url: string) => url.replace(/\/+$/, '');
 
+
 // API request helper
 const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${normalizeUrl(API_BASE_URL)}${endpoint}`;
@@ -21,6 +22,8 @@ const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promi
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-Key': `${getAdmin()?.access_token}`,
         ...options.headers,
       },
       credentials: 'include',
@@ -29,9 +32,19 @@ const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promi
     const responseData = await response.json();
     console.log('API Response:', responseData); // Debug log
 
+     // if resonse is unauthorized, delete admin and throw error
+    if (response.status === 401) {
+      deleteAdmin();
+      location.reload();
+      console.log("Unauthorized")
+      throw new Error('Unauthorized');
+    }
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.statusText}`, { cause: responseData });
     }
+
+   
 
     // If the response has a 'data' property, return that, otherwise return the whole response
     return responseData.data !== undefined ? responseData.data : responseData;
@@ -143,7 +156,28 @@ export const getAdmin = (): Admin | null => {
   return data ? JSON.parse(data) : null;
 };
 
-export const saveAdmin = (admin: Admin) => {
+export const saveAdmin = (admin: Admin): void => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.ADMIN, JSON.stringify(admin));
+};
+
+export const deleteAdmin = (): void => {
+  if (typeof window === 'undefined') {
+    console.log("Window is undefined");
+    return;
+  };
+  console.log("Removing admin");
+  localStorage.removeItem(STORAGE_KEYS.ADMIN);
+};
+
+export const authLogin = async (email: string, password: string): Promise<Admin> => {
+  try {
+    return await apiRequest<Admin>('/rating-login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    throw error;
+  }
 };
